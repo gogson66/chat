@@ -10,8 +10,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class SimpleChatClient {
     private JTextArea incoming;
     private JTextField outgoing;
+    private JTextField userNameField;
     private BufferedReader reader;
     private PrintWriter writer;
+    private String userName = "Anonymus";
+
 
     public void go() {
         setUpNetworking();
@@ -19,20 +22,25 @@ public class SimpleChatClient {
         JScrollPane scroller = createScrollableTextArea();
 
         outgoing = new JTextField(20);
+        userNameField = new JTextField(20);
         JButton sendButton = new JButton("Send");
+        JButton setUserNameButton = new JButton("Set user name");
         sendButton.addActionListener(e -> sendMessage());
+        setUserNameButton.addActionListener(e -> setUserName());
 
         JPanel mainPanel = new JPanel();
         mainPanel.add(scroller);
         mainPanel.add(outgoing);
         mainPanel.add(sendButton);
+        mainPanel.add(userNameField);
+        mainPanel.add(setUserNameButton);
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(new IncomingReader());
 
-        JFrame frame = new JFrame("Simple Chat Client");
+        JFrame frame = new JFrame("Simple Chat Client ");
         frame.getContentPane().add(BorderLayout.CENTER, mainPanel);
-        frame.setSize(400, 350);
+        frame.setSize(450, 450);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
@@ -68,13 +76,19 @@ public class SimpleChatClient {
 
     }
 
-    public void sendMessage() {
+    private void sendMessage() {
 
-        writer.println(outgoing.getText());
+        writer.println(userName + ": " + outgoing.getText());
         writer.flush();
         outgoing.setText("");
         outgoing.requestFocus();
 
+    }
+
+    private void setUserName() {
+        userName = userNameField.getText();
+        userNameField.setText("");
+        userNameField.requestFocus();
     }
 
     public class IncomingReader implements Runnable {
