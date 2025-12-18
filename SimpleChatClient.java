@@ -86,7 +86,10 @@ public class SimpleChatClient {
     }
 
     private void setUserName() {
+        String oldUserName = userName;
         userName = userNameField.getText();
+        writer.println(oldUserName + " changed his username to " + userName);
+        writer.flush();
         userNameField.setText("");
         userNameField.requestFocus();
     }
