@@ -3,7 +3,9 @@ import java.awt.*;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
+import java.util.*;
 import java.util.concurrent.*;
+import com.google.gson.Gson;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -13,7 +15,11 @@ public class SimpleChatClient {
     private JTextField userNameField;
     private BufferedReader reader;
     private PrintWriter writer;
-    private String userName = "Anonymus";
+    private String userName;
+
+    public SimpleChatClient() {
+        this.userName = "Guest" + ThreadLocalRandom.current().nextInt(1000);
+    }
 
 
     public void go() {
@@ -78,7 +84,9 @@ public class SimpleChatClient {
 
     private void sendMessage() {
 
-        writer.println(userName + ": " + outgoing.getText());
+        Message message = new Message(MessageType.CHAT, userName, 0L, Map.of("content", outgoing.getText()));
+        String json = gson.toJson(msg);
+        writer.println(json);
         writer.flush();
         outgoing.setText("");
         outgoing.requestFocus();
@@ -86,10 +94,10 @@ public class SimpleChatClient {
     }
 
     private void setUserName() {
-        String oldUserName = userName;
-        userName = userNameField.getText();
-        writer.println(oldUserName + " changed his username to " + userName);
+        Message message = new Message(MessageType.UPDATE_NAME, userName, 0L, Map.of("old", userName, "new", userNameField.getText()));
+        writer.println(message);
         writer.flush();
+        userName = userNameField.getText();
         userNameField.setText("");
         userNameField.requestFocus();
     }
