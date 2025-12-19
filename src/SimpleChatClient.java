@@ -16,6 +16,7 @@ public class SimpleChatClient {
     private BufferedReader reader;
     private PrintWriter writer;
     private String userName;
+    private Gson gson = new Gson();
 
     public SimpleChatClient() {
         this.userName = "Guest" + ThreadLocalRandom.current().nextInt(1000);
@@ -85,7 +86,7 @@ public class SimpleChatClient {
     private void sendMessage() {
 
         Message message = new Message(MessageType.CHAT, userName, 0L, Map.of("content", outgoing.getText()));
-        String json = gson.toJson(msg);
+        String json = gson.toJson(message);
         writer.println(json);
         writer.flush();
         outgoing.setText("");
