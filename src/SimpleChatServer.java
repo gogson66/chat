@@ -2,14 +2,17 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.channels.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import com.google.gson.Gson;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class SimpleChatServer {
 
     private final List<PrintWriter> clientWriters = new ArrayList<>();
+    private final Gson gson = new Gson();
 
     public static void main(String[] args) {
         new SimpleChatServer().go();
@@ -36,12 +39,14 @@ public class SimpleChatServer {
         }
     }
 
-    private void tellEveryone(String message) {
+    private void tellEveryone(ServerMessage message) {
         for (PrintWriter writer: clientWriters) {
-            writer.println(message);
+            String json = gson.toJson(message);
+            writer.println(json);
             writer.flush();
         }
     }
+
 
     public class ClientHandler implements Runnable{
 
@@ -54,11 +59,12 @@ public class SimpleChatServer {
         }
 
         public void run() {
-            String message;
+            String jsonString;
             try {
-                while((message = reader.readLine()) != null) {
-                    System.out.println("read" +  message);
-                    tellEveryone(message);
+                while((jsonString = reader.readLine()) != null) {
+                    ClientMessage message = gson.fromJson(jsonString, ClientMessage.class);
+                    ServerMessage messageWithTimestamp = new ServerMessage(message.Type(), message.from(), Instant.now().toEpochMilli(), message.data());
+                    tellEveryone(messageWithTimestamp);
                 }
 
             } catch(SocketException ex) {

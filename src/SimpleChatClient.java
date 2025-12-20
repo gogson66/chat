@@ -3,9 +3,12 @@ import java.awt.*;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import com.google.gson.Gson;
+import java.time.Instant;
+
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -85,7 +88,7 @@ public class SimpleChatClient {
 
     private void sendMessage() {
 
-        Message message = new Message(MessageType.CHAT, userName, 0L, Map.of("content", outgoing.getText()));
+        ClientMessage message = new ClientMessage(MessageType.CHAT, userName, Map.of("content", outgoing.getText()));
         String json = gson.toJson(message);
         writer.println(json);
         writer.flush();
@@ -95,8 +98,9 @@ public class SimpleChatClient {
     }
 
     private void setUserName() {
-        Message message = new Message(MessageType.UPDATE_NAME, userName, 0L, Map.of("old", userName, "new", userNameField.getText()));
-        writer.println(message);
+        ClientMessage message = new ClientMessage(MessageType.UPDATE_NAME, userName, Map.of("old", userName, "new", userNameField.getText()));
+        String json = gson.toJson(message);
+        writer.println(json);
         writer.flush();
         userName = userNameField.getText();
         userNameField.setText("");
@@ -106,17 +110,28 @@ public class SimpleChatClient {
     public class IncomingReader implements Runnable {
 
         public void run() {
-            String message;
+            String jsonString;
             try {
 
-                while((message = reader.readLine()) != null) {
-                    System.out.println("read " + message);
+                while((jsonString = reader.readLine()) != null) {
+                    ServerMessage messageObj = gson.fromJson(jsonString, ServerMessage.class);
+                    String message = handleMessage(messageObj);
                     incoming.append(message + "\n");
                 }
 
             } catch(IOException ex) {
                 ex.printStackTrace();
             }
+        }
+    }
+
+    private String handleMessage(ServerMessage message) {
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm");
+        String time = formatter.format(Date.from(Instant.ofEpochMilli(message.createdAt())));
+        switch (message.Type()) {
+            case CHAT: return time + " " + message.from().toUpperCase() + ": " + message.data().get("content");
+            case UPDATE_NAME: return time + " " + message.data().get("old").toUpperCase() + " changed his name to: " + message.data().get("new").toUpperCase();
+            default: return "Error";      
         }
     }
 
